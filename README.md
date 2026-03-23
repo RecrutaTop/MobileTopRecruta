@@ -107,6 +107,8 @@ Endpoints disponíveis:
 
 ### Setup do Projeto
 
+OBS: Você vai precisar do Android Studio
+
 ```bash
 npm create vite@latest portal-transparencia -- --template react-ts
 cd portal-transparencia
