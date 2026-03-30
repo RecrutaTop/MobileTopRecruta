@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { useDebounce } from '@/hooks/useDebounce'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { SortSelector } from '@/components/ui/SortSelector'
+import type { AppError } from '@/types/error.types'
 
 const PER_PAGE = 15;
 
@@ -62,8 +63,8 @@ export function Orgaos() {
       const res = await orgaosService.getAllPaginated({ page: currentPage, per_page: PER_PAGE })
       setData(res)
     } catch (err: unknown) {
-      console.error(err)
-      setError('Falha ao carregar os órgãos.')
+      const error = err as AppError
+      setError(error.friendlyMessage || 'Falha ao carregar os órgãos.')
     } finally {
       setLoading(false)
     }
@@ -76,8 +77,8 @@ export function Orgaos() {
       const res = await orgaosService.getAll()
       setAllOrgaos(res)
     } catch (err: unknown) {
-      console.error(err)
-      setError('Falha ao carregar os órgãos.')
+      const error = err as AppError
+      setError(error.friendlyMessage || 'Falha ao carregar os órgãos.')
     } finally {
       setLoading(false)
     }
@@ -146,8 +147,9 @@ export function Orgaos() {
       await orgaosService.delete(orgaoToDelete.id)
       toast.success('Órgão excluído com sucesso!')
       reload()
-    } catch {
-      toast.error('Erro ao excluir o órgão. Verifique se existem despesas vinculadas.')
+    } catch (err: unknown) {
+      const error = err as AppError
+      toast.error(error.friendlyMessage || 'Erro ao excluir o órgão. Verifique se existem despesas vinculadas.')
     } finally {
       setIsDeleteOpen(false)
       setOrgaoToDelete(null)

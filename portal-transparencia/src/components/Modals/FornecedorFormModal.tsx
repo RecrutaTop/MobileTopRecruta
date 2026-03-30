@@ -12,6 +12,7 @@ import { Loader2, Pencil, PlusCircle, User, FileText } from 'lucide-react'
 import { fornecedoresService } from '@/services/fornecedores'
 import type { FornecedorPayload, FornecedorFormModalProps } from '@/types/fornecedor.types'
 import { toast } from 'sonner'
+import type { AppError } from '@/types/error.types'
 
 export function FornecedorFormModal({ isOpen, onClose, onSuccess, initialData }: FornecedorFormModalProps) {
   const isEditing = !!initialData
@@ -55,8 +56,8 @@ export function FornecedorFormModal({ isOpen, onClose, onSuccess, initialData }:
       onSuccess()
       onClose()
     } catch (err: unknown) {
-      console.error(err)
-      toast.error(isEditing ? 'Erro ao atualizar o fornecedor.' : 'Erro ao cadastrar o fornecedor.')
+      const error = err as AppError
+      toast.error(error.friendlyMessage || (isEditing ? 'Erro ao atualizar o fornecedor.' : 'Erro ao cadastrar o fornecedor.'))
     } finally {
       setIsSubmitting(false)
     }

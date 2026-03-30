@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { PaginationBar } from '@/components/ui/PaginationBar';
 import { SortSelector } from '@/components/ui/SortSelector';
+import type { AppError } from '@/types/error.types';
 
 const DESPESA_SORT_OPTIONS = [
   { label: 'Maior valor', value: 'valor_desc' },
@@ -46,8 +47,8 @@ export function Despesas() {
       const res = await despesasService.getAll()
       setAllDespesas(res)
     } catch (err: unknown) {
-      console.error(err)
-      setError('Falha ao carregar as despesas.')
+      const error = err as AppError
+      setError(error.friendlyMessage || 'Falha ao carregar as despesas.')
     } finally {
       setLoading(false)
     }
@@ -124,8 +125,9 @@ export function Despesas() {
       await despesasService.delete(despesaToDelete.id)
       toast.success('Despesa excluída com sucesso!')
       reload()
-    } catch {
-      toast.error('Erro ao excluir a despesa.')
+    } catch (err: unknown) {
+      const error = err as AppError
+      toast.error(error.friendlyMessage || 'Erro ao excluir a despesa.')
     } finally {
       setIsDeleteOpen(false)
       setDespesaToDelete(null)

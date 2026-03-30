@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { useDebounce } from '@/hooks/useDebounce'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { SortSelector } from '@/components/ui/SortSelector'
+import type { AppError } from '@/types/error.types'
 
 const PER_PAGE = 15
 
@@ -61,8 +62,8 @@ export function Fornecedores() {
       const res = await fornecedoresService.getAllPaginated({ page: currentPage, per_page: PER_PAGE })
       setData(res)
     } catch (err: unknown) {
-      console.error(err)
-      setError('Falha ao carregar os fornecedores.')
+      const error = err as AppError
+      setError(error.friendlyMessage || 'Falha ao carregar os fornecedores.')
     } finally {
       setLoading(false)
     }
@@ -75,8 +76,8 @@ export function Fornecedores() {
       const res = await fornecedoresService.getAll()
       setAllFornecedores(res)
     } catch (err: unknown) {
-      console.error(err)
-      setError('Falha ao carregar os fornecedores.')
+      const error = err as AppError
+      setError(error.friendlyMessage || 'Falha ao carregar os fornecedores.')
     } finally {
       setLoading(false)
     }
@@ -142,8 +143,9 @@ export function Fornecedores() {
       await fornecedoresService.delete(fornecedorToDelete.id)
       toast.success('Fornecedor excluído com sucesso!')
       reload()
-    } catch {
-      toast.error('Erro ao excluir o fornecedor. Verifique se existem despesas vinculadas.')
+    } catch (err: unknown) {
+      const error = err as AppError
+      toast.error(error.friendlyMessage || 'Erro ao excluir o fornecedor. Verifique se existem despesas vinculadas.')
     } finally {
       setIsDeleteOpen(false)
       setFornecedorToDelete(null)

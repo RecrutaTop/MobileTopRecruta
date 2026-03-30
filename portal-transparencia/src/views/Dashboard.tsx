@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardAction, CardContent } from '@/componen
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { ViewToggle } from '@/components/Dashboard/ViewToggle';
 import { ChartRenderer } from '@/components/Dashboard/ChartRenderer';
+import type { AppError } from '@/types/error.types';
 
 export function Dashboard() {
   const [state, setState] = useState({
@@ -54,14 +55,11 @@ export function Dashboard() {
         });
 
       } catch (err: unknown) {
-        console.error("Erro no loadData:", err)
-        
         let errorMessage = 'Falha ao carregar os dados financeiros do Dashboard. Verifique se o backend está respondendo.'
         
-        if (err instanceof Error) {
-          errorMessage = err.message === 'Network Error' 
-            ? 'Erro de conexão: Não foi possível alcançar o servidor.'
-            : `Erro ao carregar o painel: ${err.message}`
+        if (err) {
+          const error = err as AppError
+          errorMessage = error.friendlyMessage || error.message || 'Falha ao carregar os dados financeiros do Dashboard.'
         }
         
         setState(prev => ({ ...prev, loading: false, error: errorMessage }))

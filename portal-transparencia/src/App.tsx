@@ -4,6 +4,7 @@ import { Dashboard } from '@/views/Dashboard';
 import { Despesas } from '@/views/Despesas/Despesas';
 import { Orgaos } from '@/views/Orgaos/Orgaos'
 import { Fornecedores } from '@/views/Fornecedores/Fornecedores'
+import { NotFound } from '@/views/NotFound'
 import { Toaster } from '@/components/ui/sonner'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/orgaos" element={<Orgaos />} />
           <Route path="/fornecedores" element={<Fornecedores />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
     </BrowserRouter>
