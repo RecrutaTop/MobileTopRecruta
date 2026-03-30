@@ -17,6 +17,7 @@ import type { FornecedorListItem } from '@/types/fornecedores.types';
 import { despesasService } from '@/services/despesas';
 import type { DespesaPayload, DespesaFormModalProps } from '@/types/despesa.types';
 import { toast } from 'sonner';
+import type { AppError } from '@/types/error.types';
 
 export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: DespesaFormModalProps) {
   const isEditing = !!initialData
@@ -33,8 +34,8 @@ export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: De
 
   useEffect(() => {
     if (isOpen) {
-      orgaosService.getAll().then(setOrgaos).catch(console.error)
-      fornecedoresService.getAll().then(setFornecedores).catch(console.error)
+      orgaosService.getAll().then(setOrgaos).catch(() => {})
+      fornecedoresService.getAll().then(setFornecedores).catch(() => {})
 
       if (initialData) {
         setOrgaoId(initialData.orgao_id.toString())
@@ -78,8 +79,8 @@ export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: De
       onSuccess()
       onClose()
     } catch (err: unknown) {
-      console.error(err)
-      toast.error(isEditing ? 'Erro ao atualizar despesa' : 'Erro ao criar despesa')
+      const error = err as AppError
+      toast.error(error.friendlyMessage || (isEditing ? 'Erro ao atualizar despesa.' : 'Erro ao criar despesa.'))
     } finally {
       setIsSubmitting(false)
     }

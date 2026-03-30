@@ -12,6 +12,7 @@ import { Loader2, Pencil, PlusCircle, Building2 } from 'lucide-react';
 import { orgaosService } from '@/services/orgaos';
 import type { OrgaoPayload, OrgaoFormModalProps } from '@/types/orgao.types'
 import { toast } from 'sonner'
+import type { AppError } from '@/types/error.types'
 
 
 export function OrgaoFormModal({ isOpen, onClose, onSuccess, initialData }: OrgaoFormModalProps) {
@@ -47,8 +48,8 @@ export function OrgaoFormModal({ isOpen, onClose, onSuccess, initialData }: Orga
       onSuccess()
       onClose()
     } catch (err: unknown) {
-      console.error(err)
-      toast.error(isEditing ? 'Erro ao atualizar o órgão.' : 'Erro ao cadastrar o órgão.')
+      const error = err as AppError
+      toast.error(error.friendlyMessage || (isEditing ? 'Erro ao atualizar o órgão.' : 'Erro ao cadastrar o órgão.'))
     } finally {
       setIsSubmitting(false)
     }

@@ -31,6 +31,7 @@ import { despesasService } from '@/services/despesas'
 import { formatCurrency } from '@/utils/formatters'
 import type { DespesaDetailModalProps } from '@/types/despesa.types'
 import { toast } from 'sonner'
+import type { AppError } from '@/types/error.types'
 import { ConfirmDeleteModal } from './ConfirmDeleteModal'
 
 export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }: DespesaDetailModalProps) {
@@ -45,8 +46,7 @@ export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }
   const validateFile = (file: File | Blob) => {
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
-      toast.error(`O arquivo é muito grande (${sizeMB}MB). O limite permitido é 5MB.`)
+      toast.error('O arquivo excede o limite de 5MB.')
       return false
     }
     return true
@@ -75,10 +75,10 @@ export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }
           onClose()
         }
       }
-    } catch (err: any) {
-      if (!err.message?.includes('User cancelled')) {
-        console.error('Camera Error:', err)
-        toast.error(`Erro ao capturar foto: ${err.message || 'Falha no acesso à câmera'}`)
+    } catch (err: unknown) {
+      if (!(err instanceof Error) || !err.message?.includes('User cancelled')) {
+        const error = err as AppError
+        toast.error(error.friendlyMessage || 'Não conseguimos acessar a câmera agora. Verifique as permissões.')
       }
     } finally {
       setIsUploading(false)
@@ -120,10 +120,10 @@ export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }
           onClose()
         }
       }
-    } catch (err: any) {
-      if (!err.message?.includes('User cancelled')) {
-        console.error(err)
-        toast.error('Erro ao selecionar arquivo.')
+    } catch (err: unknown) {
+      if (!(err instanceof Error) || !err.message?.includes('User cancelled')) {
+        const error = err as AppError
+        toast.error(error.friendlyMessage || 'Não foi possível selecionar o arquivo.')
       }
     } finally {
       setIsUploading(false)
@@ -145,9 +145,8 @@ export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }
       setPreviewUrl(url)
       setPreviewType(blob.type)
       setIsPreviewOpen(true)
-    } catch (err) {
-      console.error(err)
-      toast.error('Erro ao abrir o comprovante. Verifique se o arquivo existe.')
+    } catch {
+      toast.error('Não foi possível abrir este arquivo no momento.')
     } finally {
       setIsDownloading(false)
     }
@@ -169,9 +168,9 @@ export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }
       toast.success('Comprovante removido com sucesso!')
       onDeleteSuccess()
       onClose()
-    } catch (err) {
-      console.error(err)
-      toast.error('Erro ao remover o comprovante.')
+    } catch (err: unknown) {
+      const error = err as AppError
+      toast.error(error.friendlyMessage || 'Não foi possível excluir o arquivo. Tente novamente.')
     } finally {
       setIsDeletingComprovante(false)
       setIsConfirmDeleteOpen(false)
