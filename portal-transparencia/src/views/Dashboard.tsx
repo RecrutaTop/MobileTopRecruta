@@ -98,8 +98,9 @@ export function Dashboard() {
       onRefresh={loadData}
       refreshingContent={<div className="flex justify-center p-4"><RefreshCw className="w-6 h-6 animate-spin text-blue-500" /></div>}
       pullingContent={""}
+      className="flex-1 w-full"
     >
-      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full pb-20 min-h-[calc(100vh-100px)]">
+      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
         
         <div className="flex items-center gap-3 mb-2">
           <div>

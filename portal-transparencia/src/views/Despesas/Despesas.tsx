@@ -140,8 +140,9 @@ export function Despesas() {
       onRefresh={loadAll}
       refreshingContent={<div className="flex justify-center p-4"><RefreshCw className="w-6 h-6 animate-spin text-blue-500" /></div>}
       pullingContent={""}
+      className="flex-1 w-full"
     >
-      <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto w-full pb-20 min-h-[calc(100vh-100px)]">
+      <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto w-full">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Despesas</h1>
