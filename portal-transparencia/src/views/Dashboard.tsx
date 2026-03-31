@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { dashboardService } from '@/services/dashboard';
 import type { DataItem, ViewMode, GastoOrgao, GastoFornecedor } from '@/types/dashboard.types';
 import { Card, CardHeader, CardTitle, CardAction, CardContent } from '@/components/ui/card';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { ViewToggle } from '@/components/Dashboard/ViewToggle';
 import { ChartRenderer } from '@/components/Dashboard/ChartRenderer';
 import type { AppError } from '@/types/error.types';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 export function Dashboard() {
   const [state, setState] = useState({
@@ -18,56 +19,56 @@ export function Dashboard() {
   const [orgaoView, setOrgaoView] = useState<ViewMode>('valor')
   const [fornView, setFornView] = useState<ViewMode>('valor')
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setState(prev => ({ ...prev, loading: true, error: null }))
-        
-        const [orgaos, fornecedores] = await Promise.all([
-          dashboardService.getTotalPorOrgao(),
-          dashboardService.getTotalPorFornecedor(),
-        ])
-        
-        if (!Array.isArray(orgaos) || !Array.isArray(fornecedores)) {
-          throw new Error('A resposta da API não está no formato esperado.')
-        }
-
-        const totalOrgao = orgaos.reduce((acc, curr) => acc + curr.total, 0)
-        const totalFornecedor = fornecedores.reduce((acc, curr) => acc + curr.total, 0)
-
-        const dataOrgaos: DataItem[] = orgaos.map((item: GastoOrgao) => ({
-          name: item.orgao.name,
-          value: item.total,
-          percentage: totalOrgao > 0 ? parseFloat(((item.total / totalOrgao) * 100).toFixed(2)) : 0
-        }));
-
-        const dataFornecedores: DataItem[] = fornecedores.map((item: GastoFornecedor) => ({
-          name: item.fornecedor.name,
-          value: item.total,
-          percentage: totalFornecedor > 0 ? parseFloat(((item.total / totalFornecedor) * 100).toFixed(2)) : 0
-        }));
-
-        setState({
-          gastosOrgao: dataOrgaos,
-          gastosFornecedor: dataFornecedores,
-          loading: false,
-          error: null
-        });
-
-      } catch (err: unknown) {
-        let errorMessage = 'Falha ao carregar os dados financeiros do Dashboard. Verifique se o backend está respondendo.'
-        
-        if (err) {
-          const error = err as AppError
-          errorMessage = error.friendlyMessage || error.message || 'Falha ao carregar os dados financeiros do Dashboard.'
-        }
-        
-        setState(prev => ({ ...prev, loading: false, error: errorMessage }))
+  const loadData = useCallback(async () => {
+    try {
+      setState(prev => ({ ...prev, loading: !prev.gastosOrgao.length, error: null }))
+      
+      const [orgaos, fornecedores] = await Promise.all([
+        dashboardService.getTotalPorOrgao(),
+        dashboardService.getTotalPorFornecedor(),
+      ])
+      
+      if (!Array.isArray(orgaos) || !Array.isArray(fornecedores)) {
+        throw new Error('A resposta da API não está no formato esperado.')
       }
-    }
 
-    loadData()
+      const totalOrgao = orgaos.reduce((acc, curr) => acc + curr.total, 0)
+      const totalFornecedor = fornecedores.reduce((acc, curr) => acc + curr.total, 0)
+
+      const dataOrgaos: DataItem[] = orgaos.map((item: GastoOrgao) => ({
+        name: item.orgao.name,
+        value: item.total,
+        percentage: totalOrgao > 0 ? parseFloat(((item.total / totalOrgao) * 100).toFixed(2)) : 0
+      }));
+
+      const dataFornecedores: DataItem[] = fornecedores.map((item: GastoFornecedor) => ({
+        name: item.fornecedor.name,
+        value: item.total,
+        percentage: totalFornecedor > 0 ? parseFloat(((item.total / totalFornecedor) * 100).toFixed(2)) : 0
+      }));
+
+      setState({
+        gastosOrgao: dataOrgaos,
+        gastosFornecedor: dataFornecedores,
+        loading: false,
+        error: null
+      });
+
+    } catch (err: unknown) {
+      let errorMessage = 'Falha ao carregar os dados financeiros do Dashboard. Verifique se o backend está respondendo.'
+      
+      if (err) {
+        const error = err as AppError
+        errorMessage = error.friendlyMessage || error.message || 'Falha ao carregar os dados financeiros do Dashboard.'
+      }
+      
+      setState(prev => ({ ...prev, loading: false, error: errorMessage }))
+    }
   }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   if (state.loading) {
     return (
@@ -93,41 +94,47 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full pb-20">
-      
-      <div className="flex items-center gap-3 mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Resumo Financeiro</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Acompanhamento das despesas</p>
+    <PullToRefresh
+      onRefresh={loadData}
+      refreshingContent={<div className="flex justify-center p-4"><RefreshCw className="w-6 h-6 animate-spin text-blue-500" /></div>}
+      pullingContent={""}
+    >
+      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full pb-20 min-h-[calc(100vh-100px)]">
+        
+        <div className="flex items-center gap-3 mb-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Resumo Financeiro</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Acompanhamento das despesas</p>
+          </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+          <Card className="flex flex-col h-[420px]">
+            <CardHeader>
+              <CardTitle>Gastos por Órgão</CardTitle>
+              <CardAction>
+                <ViewToggle active={orgaoView} onChange={setOrgaoView} />
+              </CardAction>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 w-full">
+              <ChartRenderer data={state.gastosOrgao} viewMode={orgaoView} />
+            </CardContent>
+          </Card>
+
+          <Card className="flex flex-col h-[420px]">
+            <CardHeader>
+              <CardTitle>Gastos por Fornecedor</CardTitle>
+              <CardAction>
+                <ViewToggle active={fornView} onChange={setFornView} />
+              </CardAction>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 w-full">
+              <ChartRenderer data={state.gastosFornecedor} viewMode={fornView} />
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-        <Card className="flex flex-col h-[420px]">
-          <CardHeader>
-            <CardTitle>Gastos por Órgão</CardTitle>
-            <CardAction>
-              <ViewToggle active={orgaoView} onChange={setOrgaoView} />
-            </CardAction>
-          </CardHeader>
-          <CardContent className="flex-1 min-h-0 w-full">
-            <ChartRenderer data={state.gastosOrgao} viewMode={orgaoView} />
-          </CardContent>
-        </Card>
-
-        <Card className="flex flex-col h-[420px]">
-          <CardHeader>
-            <CardTitle>Gastos por Fornecedor</CardTitle>
-            <CardAction>
-              <ViewToggle active={fornView} onChange={setFornView} />
-            </CardAction>
-          </CardHeader>
-          <CardContent className="flex-1 min-h-0 w-full">
-            <ChartRenderer data={state.gastosFornecedor} viewMode={fornView} />
-          </CardContent>
-        </Card>
-      </div>
-
-    </div>
+    </PullToRefresh>
   )
 }

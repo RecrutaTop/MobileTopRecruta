@@ -4,7 +4,7 @@ import type { Fornecedor, PaginatedResponse, FornecedorListItem } from '@/types/
 import { FornecedorCard } from '@/components/Modals/FornecedorCard'
 import { FornecedorFormModal } from '@/components/Modals/FornecedorFormModal'
 import { ConfirmDeleteModal } from '@/components/Modals/ConfirmDeleteModal'
-import { Loader2, Plus, AlertCircle, Users, Search } from 'lucide-react'
+import { Loader2, Plus, AlertCircle, Users, Search, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { PaginationBar } from '@/components/ui/PaginationBar'
 import { SortSelector } from '@/components/ui/SortSelector'
 import type { AppError } from '@/types/error.types'
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 const PER_PAGE = 15
 
@@ -153,114 +154,120 @@ export function Fornecedores() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto w-full pb-20">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Fornecedores</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Gerenciamento de fornecedores cadastrados</p>
-        </div>
-        <Button
-          onClick={() => { setFornecedorToEdit(null); setIsFormOpen(true) }}
-          className="h-10 sm:h-11 rounded-xl px-4 sm:px-6 w-full sm:w-auto"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Cadastrar Fornecedor
-        </Button>
-      </div>
-
-      <form onSubmit={e => e.preventDefault()} className="relative group w-full">
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-        </div>
-        <Input
-          value={searchQuery}
-          onChange={e => handleSearchChange(e.target.value)}
-          placeholder="Buscar por nome, documento ou ID..."
-          className="pl-10 h-11 rounded-xl bg-white dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus-visible:ring-indigo-500 w-full shadow-sm"
-        />
-      </form>
-
-      <div className="flex items-center justify-end">
-        <SortSelector options={FORNECEDOR_SORT_OPTIONS} value={sortBy} onChange={setSortBy} />
-      </div>
-        {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-2xl flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-medium">{error}</p>
+    <PullToRefresh
+      onRefresh={async () => { reload() }}
+      refreshingContent={<div className="flex justify-center p-4"><RefreshCw className="w-6 h-6 animate-spin text-blue-500" /></div>}
+      pullingContent={""}
+    >
+      <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto w-full pb-20 min-h-[calc(100vh-100px)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Fornecedores</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Gerenciamento de fornecedores cadastrados</p>
           </div>
-        )}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center p-20 space-y-4">
-            <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
-            <p className="text-gray-500 dark:text-gray-400 animate-pulse">Carregando fornecedores...</p>
+          <Button
+            onClick={() => { setFornecedorToEdit(null); setIsFormOpen(true) }}
+            className="h-10 sm:h-11 rounded-xl px-4 sm:px-6 w-full sm:w-auto"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Cadastrar Fornecedor
+          </Button>
+        </div>
+
+        <form onSubmit={e => e.preventDefault()} className="relative group w-full">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
           </div>
-        ) : (
-          <div className="space-y-6">
-            {debouncedSearch.trim() !== '' ? (
-              <>
-                {filteredFornecedores.length > 0 ? (
+          <Input
+            value={searchQuery}
+            onChange={e => handleSearchChange(e.target.value)}
+            placeholder="Buscar por nome, documento ou ID..."
+            className="pl-10 h-11 rounded-xl bg-white dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus-visible:ring-indigo-500 w-full shadow-sm"
+          />
+        </form>
+
+        <div className="flex items-center justify-end">
+          <SortSelector options={FORNECEDOR_SORT_OPTIONS} value={sortBy} onChange={setSortBy} />
+        </div>
+          {error && (
+            <div className="mb-6 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-2xl flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          )}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center p-20 space-y-4">
+              <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+              <p className="text-gray-500 dark:text-gray-400 animate-pulse">Carregando fornecedores...</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {debouncedSearch.trim() !== '' ? (
+                <>
+                  {filteredFornecedores.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                      {applySorting(filteredFornecedores).map(f => (
+                        <FornecedorCard
+                          key={f.id}
+                          fornecedor={f as Fornecedor}
+                          onEdit={() => handleEdit(f as Fornecedor)}
+                          onDelete={() => handleDeleteRequest(f as Fornecedor)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState term={debouncedSearch} />
+                  )}
+                  <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                    {filteredFornecedores.length} resultado{filteredFornecedores.length !== 1 ? 's' : ''} para "{debouncedSearch}"
+                  </p>
+                </>
+              ) : (
+                <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {applySorting(filteredFornecedores).map(f => (
+                    {applySorting(data?.data ?? []).map(f => (
                       <FornecedorCard
                         key={f.id}
-                        fornecedor={f as Fornecedor}
-                        onEdit={() => handleEdit(f as Fornecedor)}
-                        onDelete={() => handleDeleteRequest(f as Fornecedor)}
+                        fornecedor={f}
+                        onEdit={() => handleEdit(f)}
+                        onDelete={() => handleDeleteRequest(f)}
                       />
                     ))}
                   </div>
-                ) : (
-                  <EmptyState term={debouncedSearch} />
-                )}
-                <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                  {filteredFornecedores.length} resultado{filteredFornecedores.length !== 1 ? 's' : ''} para "{debouncedSearch}"
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                  {applySorting(data?.data ?? []).map(f => (
-                    <FornecedorCard
-                      key={f.id}
-                      fornecedor={f}
-                      onEdit={() => handleEdit(f)}
-                      onDelete={() => handleDeleteRequest(f)}
+
+                  {data?.data.length === 0 && <EmptyState />}
+
+                  {data && (
+                    <PaginationBar
+                      currentPage={data.current_page}
+                      lastPage={data.last_page}
+                      total={data.total}
+                      from={data.from}
+                      to={data.to}
+                      onPrev={() => setPage(data.current_page - 1)}
+                      onNext={() => setPage(data.current_page + 1)}
                     />
-                  ))}
-                </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
-                {data?.data.length === 0 && <EmptyState />}
+        <FornecedorFormModal
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          initialData={fornecedorToEdit}
+          onSuccess={reload}
+        />
 
-                {data && (
-                  <PaginationBar
-                    currentPage={data.current_page}
-                    lastPage={data.last_page}
-                    total={data.total}
-                    from={data.from}
-                    to={data.to}
-                    onPrev={() => setPage(data.current_page - 1)}
-                    onNext={() => setPage(data.current_page + 1)}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-      <FornecedorFormModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        initialData={fornecedorToEdit}
-        onSuccess={reload}
-      />
-
-      <ConfirmDeleteModal
-        isOpen={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirm={confirmDelete}
-        title="Excluir Fornecedor"
-        description={`Tem certeza que deseja excluir o fornecedor "${fornecedorToDelete?.name}"?\n\nEssa ação é irreversível e só poderá ser realizada se não houverem despesas vinculadas a este fornecedor.`}
-      />
-    </div>
+        <ConfirmDeleteModal
+          isOpen={isDeleteOpen}
+          onClose={() => setIsDeleteOpen(false)}
+          onConfirm={confirmDelete}
+          title="Excluir Fornecedor"
+          description={`Tem certeza que deseja excluir o fornecedor "${fornecedorToDelete?.name}"?\n\nEssa ação é irreversível e só poderá ser realizada se não houverem despesas vinculadas a este fornecedor.`}
+        />
+      </div>
+    </PullToRefresh>
   )
 }
