@@ -63,6 +63,16 @@ O **Portal da Transparência Mobile** é um aplicativo administrativo robusto pr
 
 ---
 
+## 🌐 Acessos públicos
+
+### 🌎 Domínio na Web
+- https://portal-da-transparencia-mobile.vercel.app
+
+### 🤖 APK android - disponível para instalação em dispositivos Android
+- https://drive.google.com/file/d/1dWShJCwFT-0w1S_4oz0ESZuwueSbk6dq/view?usp=drive_link
+
+---
+
 ## ⚙️ Instalação e Configuração
 
 ### Pré-requisitos
@@ -89,17 +99,42 @@ VITE_API_KEY=chave-de-api
 
 ## 📱 Emulação no Android Studio
 
-### Passo 1: Configuração Nativa
-1. Abra o **Android Studio**.
-2. Selecione **Open** e aponte para a pasta `/portal-transparencia/android`.
-3. Aguarde a sincronização total do Gradle.
+Antes de abrir o projeto no Android Studio, é necessário garantir que o seu ambiente de desenvolvimento nativo está configurado corretamente.
 
-### Passo 2: Dispositivo Virtual (AVD)
-1. Acesse **Tools** > **Device Manager**.
-2. Crie um novo dispositivo (ex: **Pixel 2**).
-3. Utilize uma imagem de sistema com **API 34** ou superior.
+### Passo 1: Variáveis de Ambiente do Sistema (ANDROID_HOME)
+Para que o Capacitor consiga compilar o projeto, o seu sistema operacional precisa saber onde o Android SDK está instalado. 
 
-### Passo 3: Execução
+Configure a variável de ambiente `ANDROID_HOME` apontando para o diretório do SDK:
+* **Windows:** `C:\Users\SEU_USUARIO\AppData\Local\Android\Sdk`
+* **macOS:** `/Users/SEU_USUARIO/Library/Android/sdk`
+* **Linux:** `/home/SEU_USUARIO/Android/Sdk`
+
+### Passo 2: Arquivo local.properties
+Normalmente, o Android Studio gera este arquivo automaticamente. Porém, é recomendado criá-lo ou verificar sua existência.
+
+Na pasta `android/` do seu projeto, verifique se o arquivo `local.properties` existe. Caso não exista, crie-o e adicione o caminho do seu SDK:
+
+```properties
+# Exemplo para macOS/Linux:
+sdk.dir=/Users/SEU_USUARIO/Library/Android/sdk
+
+# Exemplo para Windows:
+sdk.dir=C\:\\Users\\SEU_USUARIO\\AppData\\Local\\Android\\Sdk
+```
+
+### Passo 3: Configuração Nativa no Android Studio
+- Clique em Open (Abrir) e selecione especificamente a pasta /portal-transparencia/android do seu projeto.
+- Aguarde o Android Studio realizar a sincronização inicial do Gradle. Isso pode levar alguns minutos na primeira vez, pois ele fará o download das dependências nativas.
+  
+### Passo 4: Configurando Dispositivo Virtual (AVD)
+- Acesse Tools > Device Manager (Gerenciador de Dispositivos).
+- Clique em Create Device (Criar Dispositivo).
+- Selecione um perfil de hardware (utilizei o Pixel 2 e Pixel 4 para validação).
+- Escolha uma imagem de sistema (System Image) com API 34 ou superior e finalize a criação do emulador.
+- Inicie o emulador.
+
+### Passo 5: Build e Execução
+Com o emulador aberto e as configurações validadas, execute os comandos abaixo no diretório raiz para compilar a aplicação e enviá-la ao Android:
 ```bash
 # Build da aplicação Web
 npm run build
@@ -110,18 +145,6 @@ npx cap sync
 # Deploy para o emulador
 npx cap run android
 ```
-
-Segue vídeo do projeto rodando no emulador e validando funcionalidades: https://drive.google.com/file/d/1955r714l84633121212121212121212/view?usp=sharing
-
----
-
-## 🌐 Acessos públicos
-
-### Dominio na Web
-- https://portal-da-transparencia-mobile.vercel.app/dashboard
-
-### APK android para testes
-
 
 ---
 
@@ -138,7 +161,7 @@ Segue vídeo do projeto rodando no emulador e validando funcionalidades: https:/
 
 ---
 
-## 📂 Arquitetura do Projeto
+## 📂 Estrutura de Diretórios
 
 | Diretório | Responsabilidade |
 | :--- | :--- |
@@ -146,10 +169,13 @@ Segue vídeo do projeto rodando no emulador e validando funcionalidades: https:/
 | `src/components` | Componentes de UI desenvolvidos por mim e nativos da lib Shadcn/UI. |
 | `src/views` | Organização das telas principais e fluxo de navegação. |
 | `src/types` | Centralização de interfaces, props e tipos globais TypeScript. |
+| `src/hooks` | Custom Hooks reutilizáveis na aplicação (não engloba hooks específicos atrelados a um único componente). |
+| `src/utils` | Funções auxiliares e formatadores genéricos. |
+| `src/lib` | Configuração e inicialização de biblioteca de terceiros. |
+| `src/context` | Gerenciamento de estado global via Context API (ex: `ThemeContext`). |
 
 ---
 
 ## Criador
 
 **Bernardo Medeiros**
-_*Este projeto é o resultado da avaliação técnica para a equipe de desenvolvimento da **Top Solutions**.*_
