@@ -17,7 +17,7 @@ export function OrgaoCard({ orgao, onEdit, onDelete }: OrgaoCardProps) {
 
       <CardHeader className="pb-2 pt-3 sm:pt-5 flex items-center border-b border-gray-50 dark:border-gray-700/30 mx-3 sm:mx-4">
         <div className="text-center w-full">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 min-h-[2.5rem] sm:min-h-[2.75rem]">
             {orgao.name}
           </h3>
           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 sm:mt-1.5 opacity-90">

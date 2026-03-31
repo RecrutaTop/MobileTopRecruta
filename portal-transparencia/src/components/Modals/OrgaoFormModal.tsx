@@ -12,24 +12,40 @@ import { Loader2, Pencil, PlusCircle, Building2 } from 'lucide-react';
 import { orgaosService } from '@/services/orgaos';
 import type { OrgaoPayload, OrgaoFormModalProps } from '@/types/orgao.types'
 import { toast } from 'sonner'
-import type { AppError } from '@/types/error.types'
-
+import type { AppError } from '@/types/error.types';
+import { validationsService } from '@/services/validations';
 
 export function OrgaoFormModal({ isOpen, onClose, onSuccess, initialData }: OrgaoFormModalProps) {
   const isEditing = !!initialData
   const [name, setName] = useState('')
+  const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
       setName(initialData?.name ?? '')
+      setError(undefined)
     }
   }, [isOpen, initialData])
+
+  const validate = () => {
+    if (!validationsService.isValidLength(name, 55)) {
+      setError('O nome deve ter no máximo 55 caracteres.')
+      return false
+    }
+    setError(undefined)
+    return true
+  }
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     if (!name.trim()) {
       toast.error('O nome do órgão é obrigatório.')
+      return
+    }
+
+    if (!validate()) {
+      toast.error('Verifique os erros no formulário.')
       return
     }
 
@@ -74,10 +90,29 @@ export function OrgaoFormModal({ isOpen, onClose, onSuccess, initialData }: Orga
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Building2 className="h-5 w-5 text-gray-400" />
+                <Building2 className={`h-5 w-5 ${error ? 'text-red-400' : 'text-gray-400'}`} />
               </div>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Secretaria de Saúde" 
-              className="pl-10 h-12 rounded-xl focus-visible:ring-blue-500" required />
+              <Input 
+                value={name} 
+                onChange={e => {
+                  setName(e.target.value)
+                  if (!validationsService.isValidLength(e.target.value, 55)) {
+                    setError('Tamanho máximo de 55 caracteres')
+                  } else {
+                    setError(undefined)
+                  }
+                }} 
+                maxLength={55}
+                placeholder="Ex: Secretaria de Saúde" 
+                className={`pl-10 h-12 rounded-xl focus-visible:ring-blue-500 transition-colors ${error ? 'border-red-500 focus-visible:ring-red-500 bg-red-50 dark:bg-red-900/10' : ''}`} 
+                required 
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-red-500 font-medium">{error}</span>
+              <span className={`ml-auto font-medium ${name.length >= 55 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                {name.length}/55
+              </span>
             </div>
           </div>
 

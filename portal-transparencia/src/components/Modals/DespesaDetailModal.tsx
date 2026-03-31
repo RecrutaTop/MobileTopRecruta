@@ -184,7 +184,7 @@ export function DespesaDetailModal({ isOpen, onClose, despesa, onDeleteSuccess }
  
           <div className="p-6 md:p-8 space-y-7">
             <div className="space-y-3 pt-4">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-tight tracking-tight">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white leading-tight tracking-tight break-words">
                 {despesa.descricao}
               </h3>
               
@@ -377,7 +377,7 @@ function InfoItem({ icon, label, value }: { icon: React.ReactNode, label: string
           {label}
         </span>
       </div>
-      <p className="text-sm font-bold text-gray-700 dark:text-gray-200 line-clamp-2 leading-snug">
+      <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-snug break-words">
         {value}
       </p>
     </div>

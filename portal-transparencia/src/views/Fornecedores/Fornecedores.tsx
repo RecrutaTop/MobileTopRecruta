@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fornecedoresService } from '@/services/fornecedores'
-import type { Fornecedor, PaginatedResponse, FornecedorListItem } from '@/types/fornecedor.types'
+import type { Fornecedor } from '@/types/fornecedor.types'
 import { FornecedorCard } from '@/components/Modals/FornecedorCard'
 import { FornecedorFormModal } from '@/components/Modals/FornecedorFormModal'
+import { FornecedorDetailModal } from '@/components/Modals/FornecedorDetailModal'
 import { ConfirmDeleteModal } from '@/components/Modals/ConfirmDeleteModal'
 import { Loader2, Plus, AlertCircle, Users, Search, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -40,13 +41,12 @@ function EmptyState({ term }: { term?: string }) {
 }
 
 export function Fornecedores() {
-  const [data, setData] = useState<PaginatedResponse<Fornecedor> | null>(null)
-  const [allFornecedores, setAllFornecedores] = useState<FornecedorListItem[]>([])
+  const [allFornecedores, setAllFornecedores] = useState<Fornecedor[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [page, setPage] = useState(1)
+  const [localPage, setLocalPage] = useState(1)
   const debouncedSearch = useDebounce(searchQuery, 400)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -54,28 +54,18 @@ export function Fornecedores() {
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [fornecedorToDelete, setFornecedorToDelete] = useState<Fornecedor | null>(null)
+  
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [fornecedorToView, setFornecedorToView] = useState<Fornecedor | null>(null)
+  
   const [sortBy, setSortBy] = useState('name_asc')
-
-  const fetchPaginated = useCallback(async (currentPage: number) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const res = await fornecedoresService.getAllPaginated({ page: currentPage, per_page: PER_PAGE })
-      setData(res)
-    } catch (err: unknown) {
-      const error = err as AppError
-      setError(error.friendlyMessage || 'Falha ao carregar os fornecedores.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       const res = await fornecedoresService.getAll()
-      setAllFornecedores(res)
+      setAllFornecedores(res as Fornecedor[])
     } catch (err: unknown) {
       const error = err as AppError
       setError(error.friendlyMessage || 'Falha ao carregar os fornecedores.')
@@ -85,48 +75,41 @@ export function Fornecedores() {
   }, [])
 
   useEffect(() => {
-    if (debouncedSearch.trim() === '') {
-      setAllFornecedores([])
-      fetchPaginated(page)
-    } else {
-      setData(null)
-      fetchAll()
+    fetchAll()
+  }, [fetchAll])
+
+  const sortedFornecedores = useMemo(() => {
+    let items = [...allFornecedores]
+
+    if (debouncedSearch.trim()) {
+      const term = debouncedSearch.trim().toLowerCase()
+      items = items.filter(f =>
+        f.name.toLowerCase().includes(term) ||
+        (f.document && f.document.toLowerCase().includes(term)) ||
+        f.id.toString() === term
+      )
     }
-  }, [debouncedSearch, page, fetchPaginated, fetchAll])
 
-  const filteredFornecedores = useMemo(() => {
-    if (!debouncedSearch.trim()) return []
-    const term = debouncedSearch.trim().toLowerCase()
-    return allFornecedores.filter(f =>
-      f.name.toLowerCase().includes(term) ||
-      f.document.toLowerCase().includes(term) ||
-      f.id.toString() === term
-    )
-  }, [allFornecedores, debouncedSearch])
-
-  function applySorting<T extends { name: string; created_at?: string; id: number }>(items: T[]): T[] {
-    const sorted = [...items]
     switch (sortBy) {
-      case 'name_asc': return sorted.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
-      case 'name_desc': return sorted.sort((a, b) => b.name.localeCompare(a.name, 'pt-BR'))
-      case 'date_desc': return sorted.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
-      case 'date_asc': return sorted.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
-      default: return sorted
+      case 'name_asc': return items.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+      case 'name_desc': return items.sort((a, b) => b.name.localeCompare(a.name, 'pt-BR'))
+      case 'date_desc': return items.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+      case 'date_asc': return items.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+      default: return items
     }
-  }
+  }, [allFornecedores, debouncedSearch, sortBy])
+
+  const totalPages = Math.ceil(sortedFornecedores.length / PER_PAGE)
+  const from = (localPage - 1) * PER_PAGE
+  const to = Math.min(from + PER_PAGE, sortedFornecedores.length)
+  const paginatedFornecedores = sortedFornecedores.slice(from, to)
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
-    setPage(1)
+    setLocalPage(1)
   }
-
-  const reload = () => {
-    if (debouncedSearch.trim() === '') {
-      fetchPaginated(page)
-    } else {
-      fetchAll()
-    }
-  }
+  
+  const reload = () => fetchAll()
 
   const handleEdit = (fornecedor: Fornecedor) => {
     setFornecedorToEdit(fornecedor)
@@ -136,6 +119,11 @@ export function Fornecedores() {
   const handleDeleteRequest = (fornecedor: Fornecedor) => {
     setFornecedorToDelete(fornecedor)
     setIsDeleteOpen(true)
+  }
+
+  const handleViewDetail = (fornecedor: Fornecedor) => {
+    setFornecedorToView(fornecedor)
+    setIsDetailOpen(true)
   }
 
   const confirmDelete = async () => {
@@ -203,56 +191,43 @@ export function Fornecedores() {
             </div>
           ) : (
             <div className="space-y-6">
-              {debouncedSearch.trim() !== '' ? (
-                <>
-                  {filteredFornecedores.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                      {applySorting(filteredFornecedores).map(f => (
-                        <FornecedorCard
-                          key={f.id}
-                          fornecedor={f as Fornecedor}
-                          onEdit={() => handleEdit(f as Fornecedor)}
-                          onDelete={() => handleDeleteRequest(f as Fornecedor)}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState term={debouncedSearch} />
-                  )}
-                  <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                    {filteredFornecedores.length} resultado{filteredFornecedores.length !== 1 ? 's' : ''} para "{debouncedSearch}"
-                  </p>
-                </>
-              ) : (
+              {paginatedFornecedores.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {applySorting(data?.data ?? []).map(f => (
+                    {paginatedFornecedores.map(f => (
                       <FornecedorCard
                         key={f.id}
                         fornecedor={f}
                         onEdit={() => handleEdit(f)}
                         onDelete={() => handleDeleteRequest(f)}
+                        onViewDetail={() => handleViewDetail(f)}
                       />
                     ))}
                   </div>
 
-                  {data?.data.length === 0 && <EmptyState />}
-
-                  {data && (
-                    <PaginationBar
-                      currentPage={data.current_page}
-                      lastPage={data.last_page}
-                      total={data.total}
-                      from={data.from}
-                      to={data.to}
-                      onPrev={() => setPage(data.current_page - 1)}
-                      onNext={() => setPage(data.current_page + 1)}
-                    />
-                  )}
+                  <PaginationBar
+                    currentPage={localPage}
+                    lastPage={totalPages}
+                    total={sortedFornecedores.length}
+                    from={from + 1}
+                    to={to}
+                    onPrev={() => setLocalPage(prev => Math.max(prev - 1, 1))}
+                    onNext={() => setLocalPage(prev => Math.min(prev + 1, totalPages))}
+                  />
                 </>
+              ) : (
+                <EmptyState term={debouncedSearch} />
               )}
             </div>
           )}
+
+        {fornecedorToView && (
+          <FornecedorDetailModal
+            isOpen={isDetailOpen}
+            onClose={() => setIsDetailOpen(false)}
+            fornecedor={fornecedorToView}
+          />
+        )}
 
         <FornecedorFormModal
           isOpen={isFormOpen}

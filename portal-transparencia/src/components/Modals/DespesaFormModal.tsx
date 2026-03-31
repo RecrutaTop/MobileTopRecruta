@@ -15,6 +15,7 @@ import type { OrgaoListItem } from '@/types/orgao.types'
 import { fornecedoresService } from '@/services/fornecedores';
 import type { FornecedorListItem } from '@/types/fornecedores.types';
 import { despesasService } from '@/services/despesas';
+import { validationsService } from '@/services/validations';
 import type { DespesaPayload, DespesaFormModalProps } from '@/types/despesa.types';
 import { toast } from 'sonner';
 import type { AppError } from '@/types/error.types';
@@ -29,6 +30,7 @@ export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: De
   const [fornecedorId, setFornecedorId] = useState<string>('')
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
+  const [errors, setErrors] = useState<{descricao?: string, valor?: string}>({})
   
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -47,14 +49,36 @@ export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: De
         setFornecedorId('')
         setDescricao('')
         setValor('')
+        setErrors({})
       }
     }
   }, [isOpen, initialData])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const validateForm = () => {
+    const newErrors: {descricao?: string, valor?: string} = {}
+    
+    if (!validationsService.isValidLength(descricao, 50)) {
+      newErrors.descricao = 'A descrição deve ter no máximo 50 caracteres.'
+    }
+    
+    const valorError = validationsService.validateValue(valor)
+    if (valorError) {
+      newErrors.valor = valorError
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     if (!orgaoId || !fornecedorId || !descricao || !valor) {
       toast.error('Preencha todos os campos obrigatórios.')
+      return
+    }
+
+    if (!validateForm()) {
+      toast.error('Verifique os erros no formulário.')
       return
     }
 
@@ -150,15 +174,29 @@ export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: De
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FileText className="h-4 w-4 text-gray-400" />
+                <FileText className={`h-4 w-4 ${errors.descricao ? 'text-red-400' : 'text-gray-400'}`} />
               </div>
               <Input 
                 value={descricao} 
-                onChange={e => setDescricao(e.target.value)} 
+                onChange={e => {
+                  setDescricao(e.target.value)
+                  if (!validationsService.isValidLength(e.target.value, 50)) {
+                    setErrors(prev => ({ ...prev, descricao: 'Tamanho máximo de 50 caracteres' }))
+                  } else {
+                    setErrors(prev => ({ ...prev, descricao: undefined }))
+                  }
+                }} 
+                maxLength={50}
                 placeholder="Ex: Compra de materiais" 
-                className="pl-9 h-11 rounded-xl focus-visible:ring-blue-500"
+                className={`pl-9 h-11 rounded-xl focus-visible:ring-blue-500 transition-colors ${errors.descricao ? 'border-red-500 focus-visible:ring-red-500 bg-red-50 dark:bg-red-900/10' : ''}`}
                 required 
               />
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-red-500 font-medium">{errors.descricao}</span>
+              <span className={`ml-auto font-medium ${descricao.length >= 50 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                {descricao.length}/50
+              </span>
             </div>
           </div>
 
@@ -168,18 +206,26 @@ export function DespesaFormModal({ isOpen, onClose, onSuccess, initialData }: De
             </Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <CircleDollarSign className="h-4 w-4 text-gray-400" />
+                <CircleDollarSign className={`h-4 w-4 ${errors.valor ? 'text-red-400' : 'text-gray-400'}`} />
               </div>
               <Input 
                 type="number" 
-                step="0.01" 
+                step="0.01"
+                min="0.01" 
                 value={valor} 
-                onChange={e => setValor(e.target.value)} 
+                onChange={e => {
+                  setValor(e.target.value)
+                  const errorMsg = validationsService.validateValue(e.target.value)
+                  setErrors(prev => ({ ...prev, valor: errorMsg }))
+                }} 
                 placeholder="1000.50" 
-                className="pl-9 h-11 rounded-xl focus-visible:ring-blue-500 font-mono"
+                className={`pl-9 h-11 rounded-xl focus-visible:ring-blue-500 font-mono transition-colors ${errors.valor ? 'border-red-500 focus-visible:ring-red-500 bg-red-50 dark:bg-red-900/10' : ''}`}
                 required 
               />
             </div>
+            {errors.valor && (
+              <p className="text-xs text-red-500 font-medium mt-1">{errors.valor}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">

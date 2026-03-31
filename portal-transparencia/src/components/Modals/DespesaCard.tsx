@@ -12,18 +12,18 @@ export function DespesaCard({ despesa, onEdit, onDelete, onViewDetail }: Despesa
       className="flex flex-col h-full hover:shadow-md transition-shadow dark:hover:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer group/card"
       onClick={() => onViewDetail(despesa)}
     >
-      <CardHeader className="pb-3 border-b dark:border-gray-700/50">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base font-semibold leading-tight line-clamp-2" title={despesa.descricao}>
-            {despesa.descricao}
-          </CardTitle>
-          <span className="font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800/80 px-2 py-0.5 rounded-md text-sm shrink-0 whitespace-nowrap">
+      <CardHeader className="pb-3 border-b dark:border-gray-700/50 space-y-2">
+        <CardTitle className="text-base font-semibold leading-tight line-clamp-2 min-h-[2.5rem]" title={despesa.descricao}>
+          {despesa.descricao}
+        </CardTitle>
+        <div className="flex items-center justify-between mt-1.5">
+          <span className="font-bold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded-md text-sm shrink-0 whitespace-nowrap">
             {formatCurrency(despesa.valor)}
           </span>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+            REGISTRO: #{despesa.id.toString().padStart(4, '0')}
+          </p>
         </div>
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1.5 uppercase tracking-wider">
-          REGISTRO: #{despesa.id.toString().padStart(4, '0')}
-        </p>
       </CardHeader>
       
       <CardContent className="pt-4 flex-1 space-y-3 pb-2 text-sm text-gray-600 dark:text-gray-300">

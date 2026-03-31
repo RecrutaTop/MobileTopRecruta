@@ -9,12 +9,15 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-export function FornecedorCard({ fornecedor, onEdit, onDelete }: FornecedorCardProps) {
+export function FornecedorCard({ fornecedor, onEdit, onDelete, onViewDetail }: FornecedorCardProps) {
   const initials = getInitials(fornecedor.name)
-  const dateStr = new Date(fornecedor.created_at).toLocaleDateString('pt-BR')
+  const dateStr = fornecedor.created_at ? new Date(fornecedor.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-lg transition-all dark:hover:border-gray-500 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-100 dark:border-gray-700">
+    <Card 
+      onClick={onViewDetail}
+      className="flex flex-col h-full hover:shadow-lg cursor-pointer transition-all dark:hover:border-gray-500 bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border-2 border-gray-100 dark:border-gray-700"
+    >
 
       <div className="pt-4 pb-3 px-3 sm:pt-6 sm:pb-4 sm:px-4 flex items-center justify-center">
         <div className="bg-white dark:bg-gray-800 p-2.5 sm:p-3.5 rounded-2xl shadow-xl border border-blue-100 dark:border-gray-700 w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
@@ -26,11 +29,11 @@ export function FornecedorCard({ fornecedor, onEdit, onDelete }: FornecedorCardP
 
       <CardHeader className="pb-2 pt-3 sm:pt-5 flex items-center border-b border-gray-50 dark:border-gray-700/30 mx-3 sm:mx-4">
         <div className="text-center w-full">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 min-h-[2.5rem] sm:min-h-[2.75rem]">
             {fornecedor.name}
           </h3>
           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 sm:mt-1.5">
-            REGISTRO: #{fornecedor.id.toString().padStart(4, '0')}
+            REGISTRO: #{(fornecedor.id?.toString() || '0').padStart(4, '0')}
           </p>
         </div>
       </CardHeader>
@@ -62,11 +65,11 @@ export function FornecedorCard({ fornecedor, onEdit, onDelete }: FornecedorCardP
       </CardContent>
 
       <CardFooter className="pt-2 pb-2 sm:pt-3 sm:pb-3 border-t dark:border-gray-700/50 flex justify-end gap-2 bg-gray-50/50 dark:bg-gray-900/20 px-4 sm:px-6">
-        <Button variant="outline" size="sm" onClick={onEdit} className="h-8">
+        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(); }} className="h-8">
           <Pencil className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300 pointer-events-none" />
           <span className="sr-only">Editar</span>
         </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete} className="h-8 group">
+        <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(); }} className="h-8 group">
           <Trash2 className="w-3.5 h-3.5 pointer-events-none group-hover:block" />
           <span className="sr-only">Excluir</span>
         </Button>

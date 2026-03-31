@@ -30,6 +30,7 @@ export interface FornecedorCardProps {
   fornecedor: Fornecedor
   onEdit: () => void
   onDelete: () => void
+  onViewDetail: () => void
 }
 
 export interface FornecedorFormModalProps {

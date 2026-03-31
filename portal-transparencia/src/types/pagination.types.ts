@@ -6,4 +6,5 @@ export interface PaginationBarProps {
   to?: number
   onPrev: () => void
   onNext: () => void
+  hideDetails?: boolean
 }

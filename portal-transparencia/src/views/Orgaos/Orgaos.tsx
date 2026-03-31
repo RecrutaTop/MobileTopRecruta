@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { orgaosService } from '@/services/orgaos';
-import type { Orgao, PaginatedResponse, OrgaoListItem } from '@/types/orgao.types'
+import type { Orgao } from '@/types/orgao.types'
 import { OrgaoCard } from '@/components/Modals/OrgaoCard';
 import { OrgaoFormModal } from '@/components/Modals/OrgaoFormModal';
 import { ConfirmDeleteModal } from '@/components/Modals/ConfirmDeleteModal';
@@ -40,13 +40,12 @@ function EmptyState({ term }: { term?: string }) {
 }
 
 export function Orgaos() {
-  const [data, setData] = useState<PaginatedResponse<Orgao> | null>(null)
-  const [allOrgaos, setAllOrgaos] = useState<OrgaoListItem[]>([])
+  const [allOrgaos, setAllOrgaos] = useState<Orgao[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [page, setPage] = useState(1)
+  const [localPage, setLocalPage] = useState(1)
   const debouncedSearch = useDebounce(searchQuery, 400)
 
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -56,27 +55,12 @@ export function Orgaos() {
   const [orgaoToDelete, setOrgaoToDelete] = useState<Orgao | null>(null)
   const [sortBy, setSortBy] = useState('name_asc')
 
-  // Carrega lista paginada — usada quando não há busca ativa
-  const fetchPaginated = useCallback(async (currentPage: number) => {
-    try {
-      setLoading(true)
-      setError(null)
-      const res = await orgaosService.getAllPaginated({ page: currentPage, per_page: PER_PAGE })
-      setData(res)
-    } catch (err: unknown) {
-      const error = err as AppError
-      setError(error.friendlyMessage || 'Falha ao carregar os órgãos.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       const res = await orgaosService.getAll()
-      setAllOrgaos(res)
+      setAllOrgaos(res as Orgao[])
     } catch (err: unknown) {
       const error = err as AppError
       setError(error.friendlyMessage || 'Falha ao carregar os órgãos.')
@@ -86,51 +70,44 @@ export function Orgaos() {
   }, [])
 
   useEffect(() => {
-    if (debouncedSearch.trim() === '') {
-      setAllOrgaos([])
-      fetchPaginated(page)
-    } else {
-      setData(null)
-      fetchAll()
+    fetchAll()
+  }, [fetchAll])
+
+  const sortedOrgaos = useMemo(() => {
+    let items = [...allOrgaos]
+    
+    if (debouncedSearch.trim()) {
+      const term = debouncedSearch.trim().toLowerCase()
+      items = items.filter(o => 
+        o.name.toLowerCase().includes(term) ||
+        o.id.toString() === term
+      )
     }
-  }, [debouncedSearch, page, fetchPaginated, fetchAll])
 
-  const filteredOrgaos = useMemo(() => {
-    if (!debouncedSearch.trim()) return []
-    const term = debouncedSearch.trim().toLowerCase()
-    return allOrgaos.filter(o =>
-      o.name.toLowerCase().includes(term) ||
-      o.id.toString() === term
-    )
-  }, [allOrgaos, debouncedSearch])
-
-  function applySorting<T extends { name: string; created_at?: string; id: number }>(items: T[]): T[] {
-    const sorted = [...items]
     switch (sortBy) {
-      case 'name_asc': return sorted.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
-      case 'name_desc': return sorted.sort((a, b) => b.name.localeCompare(a.name, 'pt-BR'))
-      case 'date_desc': return sorted.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
-      case 'date_asc': return sorted.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
-      default: return sorted
+      case 'name_asc': return items.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+      case 'name_desc': return items.sort((a, b) => b.name.localeCompare(a.name, 'pt-BR'))
+      case 'date_desc': return items.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+      case 'date_asc': return items.sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+      default: return items
     }
-  }
+  }, [allOrgaos, debouncedSearch, sortBy])
+
+  const totalPages = Math.ceil(sortedOrgaos.length / PER_PAGE)
+  const from = (localPage - 1) * PER_PAGE
+  const to = Math.min(from + PER_PAGE, sortedOrgaos.length)
+  const paginatedOrgaos = sortedOrgaos.slice(from, to)
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
-    setPage(1)
+    setLocalPage(1)
   }
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: { preventDefault: () => void }) => {
     e.preventDefault()
   }
 
-  const reload = () => {
-    if (debouncedSearch.trim() === '') {
-      fetchPaginated(page)
-    } else {
-      fetchAll()
-    }
-  }
+  const reload = () => fetchAll()
 
   const handleEdit = (orgao: Orgao) => {
     setOrgaoToEdit(orgao)
@@ -208,30 +185,10 @@ export function Orgaos() {
             </div>
           ) : (
             <div className="space-y-6">
-              {debouncedSearch.trim() !== '' ? (
-                <>
-                  {filteredOrgaos.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                      {applySorting(filteredOrgaos).map(orgao => (
-                        <OrgaoCard
-                          key={orgao.id}
-                          orgao={orgao as Orgao}
-                          onEdit={() => handleEdit(orgao as Orgao)}
-                          onDelete={() => handleDeleteRequest(orgao as Orgao)}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState term={debouncedSearch} />
-                  )}
-                  <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                    {filteredOrgaos.length} resultado{filteredOrgaos.length !== 1 ? 's' : ''} para "{debouncedSearch}"
-                  </p>
-                </>
-              ) : (
+              {paginatedOrgaos.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {applySorting(data?.data ?? []).map(orgao => (
+                    {paginatedOrgaos.map(orgao => (
                       <OrgaoCard
                         key={orgao.id}
                         orgao={orgao}
@@ -241,20 +198,18 @@ export function Orgaos() {
                     ))}
                   </div>
 
-                  {data?.data.length === 0 && <EmptyState />}
-
-                  {data && (
-                    <PaginationBar
-                      currentPage={data.current_page}
-                      lastPage={data.last_page}
-                      total={data.total}
-                      from={data.from}
-                      to={data.to}
-                      onPrev={() => setPage(data.current_page - 1)}
-                      onNext={() => setPage(data.current_page + 1)}
-                    />
-                  )}
+                  <PaginationBar
+                    currentPage={localPage}
+                    lastPage={totalPages}
+                    total={sortedOrgaos.length}
+                    from={from + 1}
+                    to={to}
+                    onPrev={() => setLocalPage(prev => Math.max(prev - 1, 1))}
+                    onNext={() => setLocalPage(prev => Math.min(prev + 1, totalPages))}
+                  />
                 </>
+              ) : (
+                <EmptyState term={debouncedSearch} />
               )}
             </div>
           )}
